@@ -1,12 +1,12 @@
-# Maze is gemaakt met behulp van de tutorial op: https://electronstudio.github.io/pygame-zero-book/chapters/maze.html
 import random
 import pgzrun 
 
-# Opzetten van de tilemap en actors
+# Opzetten van de tilemap
 TILE_SIZE = 32
 WIDTH = TILE_SIZE * 21
 HEIGHT = TILE_SIZE * 21 + 120
 
+# Tile types gedefinieerd met de index van de array: 0=empty, 1=muur, 2=goal
 tiles = ['empty', 'wall', 'goal']
 
 maze = [
@@ -33,15 +33,16 @@ maze = [
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 ]
 
+# Actor die begint op positie (1, 1) in de maze
 player = Actor('oelewapper', anchor=(0, 0), pos=(1 * TILE_SIZE, 1 * TILE_SIZE))
 
-# Display info
+# Info om de trainings-data bij te houden
 episode = 0
 total_reward = 0
-last_td_error = 0
+last_td_error = 0 # Verschil tussen de verwachte waarde van een actie & de werkelijke waarde na die actie
 last_q_value = 0
 
-# Het tekenen van de maze
+# Het tekenen van de maze-game inclusief trainingsdata info
 def draw():
     screen.clear()
     for row in range(len(maze)):
@@ -68,13 +69,14 @@ def draw():
 def get_state():
     return (int(player.y / TILE_SIZE), int(player.x / TILE_SIZE))
 
-# Actie kiezen
+# Actie kiezen met ε-greedy startegy
 actions = [0, 1, 2, 3]
 def choose_action(state):
     if random.random() < epsilon or state not in Q:
-        return random.choice(actions)   # Kies een willekeurige actie
+        return random.choice(actions)   # willekeurige actie kiezen
     return max(Q[state], key=Q[state].get)  # Kies de beste actie
 
+# Past een actie toe en berekent de beloning
 def take_action(state, action):
     row, col = state
     new_row, new_col = row, col
@@ -94,16 +96,16 @@ epsilon = 0.1   # Kans om een willekeurige actie te kiezen (exploratie). 10% kan
 alpha = 0.1     # Leersnelheid
 gamma = 0.9     # Discount factor (Hoe belangrijk zijn toekomstige beloningen)
 
-Q = {} # Q-tabel, waarin we de waarde van elke actie per toestand opslaan
+Q = {} # Q-tabel, waarin de waarde van elke actie per toestand opslaan
 
-# Beloning berekenen    
+# Beloning berekenen
 def calculate_reward(new_row, new_col, old_state):
     if maze[new_row][new_col] == 1:
-        return old_state, -5
+        return old_state, -5            # Tegen de muur = -5
     elif maze[new_row][new_col] == 2:
-        return (new_row, new_col), 10
+        return (new_row, new_col), 10   # Doel bereikt = +10
     else:
-        return (new_row, new_col), -1
+        return (new_row, new_col), -1   # Geldige stap = -1
         
 def update_q_value(state, action, reward, next_state):
     global last_td_error, last_q_value, total_reward
