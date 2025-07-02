@@ -1,5 +1,5 @@
 import random
-import pgzrun 
+import pgzrun
 
 # Opzetten van de tilemap
 TILE_SIZE = 32
@@ -16,19 +16,19 @@ maze = [
     [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1],
     [1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1],
     [1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1],
-    [1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1],
-    [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1],
+    [1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1],
+    [1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1],
     [1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1],
     [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 0, 1],
     [1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 1, 1, 0, 1],
     [1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1],
     [1, 0, 0, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 1, 0, 1],
-    [1, 1, 1, 1, 1, 0, 1, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
+    [1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1],
     [1, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1],
-    [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 1, 1, 1, 0, 1, 0, 1, 0, 1],
+    [1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1],
     [1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 0, 0, 1, 0, 1],
-    [1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1],
+    [1, 0, 1, 1, 1, 0, 1, 0, 1, 0, 0, 0, 1, 0, 1, 1, 1, 1, 1, 0, 1],
     [1, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1, 2, 1, 0, 0, 0, 0, 0, 0, 0, 1],
     [1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1]
 ]
@@ -56,10 +56,11 @@ def draw():
 
     info = [
         f"Episode: {episode}",
+        f"Steps: {steps}",
+        f"Epsilon: {epsilon:.2f}",
         f"Total reward: {total_reward:.2f}",
         f"TD Error: {last_td_error:.4f}",
         f"Q_value: {last_q_value:.4f}",
-        f"Oelewapper pos: ({get_state()})"
     ]
 
     for i, line in enumerate(info):
@@ -92,8 +93,9 @@ def take_action(state, action):
 # Q-learning implementatie
 training = False
 
-epsilon = 0.1   # Kans om een willekeurige actie te kiezen (exploratie). 10% kans om een willekeurige actie te kiezen
-alpha = 0.1     # Leersnelheid
+epsilon = 0.9   # Kans om een willekeurige actie te kiezen (exploratie).
+epsilon_decay = 0.9
+alpha = 0.2     # Leersnelheid
 gamma = 0.9     # Discount factor (Hoe belangrijk zijn toekomstige beloningen)
 
 Q = {} # Q-tabel, waarin de waarde van elke actie per toestand opslaan
@@ -103,7 +105,7 @@ def calculate_reward(new_row, new_col, old_state):
     if maze[new_row][new_col] == 1:
         return old_state, -5            # Tegen de muur = -5
     elif maze[new_row][new_col] == 2:
-        return (new_row, new_col), 10   # Doel bereikt = +10
+        return (new_row, new_col), 130   # Doel bereikt = +100
     else:
         return (new_row, new_col), -1   # Geldige stap = -1
         
@@ -115,61 +117,42 @@ def update_q_value(state, action, reward, next_state):
         Q[next_state] = {a: 0 for a in actions}
 
     old_q = Q[state][action]
-    best_next = max(Q[next_state].values())
-    td_error = reward + gamma * best_next - old_q
-    Q[state][action] = old_q + alpha * td_error
+    best_next = max(Q[next_state].values()) # maxFutureQ
+    td_error = reward + gamma * best_next - old_q # De verwachte waarde van een actie
+    Q[state][action] = old_q + alpha * td_error # Hoe goed is een actie in een bepalde toestand
 
     last_td_error = td_error
-    last_q_value = Q[state][action]
+    last_q_value = Q[state][action] # positie + actie = waarde van de agent
     total_reward += reward
 
-# current_state = None
-# steps = 0
-# max_steps = 500
+current_state = None
+steps = 0
+max_steps = 500
 
-# def train_step():
-#     global current_state, episode, steps, total_reward
+def train_step():
+    global current_state, episode, steps, total_reward, epsilon, epsilon_decay
 
-#     if current_state is None:
-#         player.x, player.y = TILE_SIZE, TILE_SIZE
-#         current_state = get_state()
-#         steps = 0
-#         total_reward = 0
+    if current_state is None:
+        player.x, player.y = TILE_SIZE, TILE_SIZE
+        current_state = get_state()
+        steps = 0
+        total_reward = 0
 
-#     action = choose_action(current_state)
-#     next_state, reward = take_action(current_state, action)
-#     update_q_value(current_state, action, reward, next_state)
+    action = choose_action(current_state)
+    next_state, reward = take_action(current_state, action)
+    update_q_value(current_state, action, reward, next_state)
 
-#     player.x = next_state[1] * TILE_SIZE
-#     player.y = next_state[0] * TILE_SIZE + 120
-#     current_state = next_state
-#     steps += 1
+    player.x = next_state[1] * TILE_SIZE
+    player.y = next_state[0] * TILE_SIZE + 120
+    current_state = next_state
+    steps += 1
 
-#     # Stop en reset als doel bereikt is of teveel stappen
-#     if maze[current_state[0]][current_state[1]] == 2 or steps >= max_steps:
-#         episode += 1
-#         current_state = None  # Episode opnieuw starten
+    # Stop en reset als doel bereikt is of teveel stappen
+    if maze[current_state[0]][current_state[1]] == 2 or steps >= max_steps:
+        episode += 1
+        epsilon = epsilon * epsilon_decay
+        current_state = None  # Episode opnieuw starten
 
-# clock.schedule_interval(train_step, 0.001)
 
-def train_episode():
-    player.x, player.y = TILE_SIZE, TILE_SIZE  # terug naar startpositie
-    state = get_state()
-    steps = 0
-    while steps < 500:  # Na 500 stappen stoppen om vastlopen te voorkomen
-        action = choose_action(state)
-        next_state, reward = take_action(state, action)
-        update_q_value(state, action, reward, next_state)
-
-        player.x = next_state[1] * TILE_SIZE
-        player.y = next_state[0] * TILE_SIZE + 120
-        state = next_state
-        if maze[state[0]][state[1]] == 2:  # Stopt de episode als 'goal' is bereikt
-            global episode, total_reward
-            episode += 1
-            break
-        steps += 1
-
-clock.schedule_interval(train_episode, 0.01)
-
+clock.schedule_interval(train_step, 0.001)
 pgzrun.go()
